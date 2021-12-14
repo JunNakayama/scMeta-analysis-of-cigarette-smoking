@@ -181,7 +181,32 @@ ggplot(data, aes(UMAP1, UMAP2, color = ident)) +
 
 
 
+#### Separation of dataset into each cell type
+## Epithelia
+EPI <- subset(D, subset = Class4 %in% c("Epithelia", "ProliferatingEpithelia"))
+EPI <- RunUMAP(EPI, reduction = "harmony", dims = 1:100, min.dist = 0.5)
+EPI <- FindNeighbors(EPI, dims = 1:15, reduction = "harmony")
+EPI <- FindClusters(EPI, resolution = 1)
+
+DimPlot(EPI, label = TRUE, label.size = 10) + NoLegend()
+DimPlot(EPI, group.by = "Smoking") + NoLegend()
 
 
-#### Separation of dataset in each cell type
+EPI.markers <- FindAllMarkers(EPI, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.5, test.use = "MAST")
+write.table(EPI.markers, file = 'EPIMarker-genes.tsv', sep='	')
+
+
+
+DimPlot(EPI, reduction = "umap", group.by = "EPIClass", label = TRUE) + NoLegend()
+
+
+
+saveRDS(EPI, file = "EPI.rds")
+
+
+
+
+
+
+
 
