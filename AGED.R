@@ -1,48 +1,36 @@
 library(Seurat)
 library(harmony)
-library(ComplexHeatmap)
-library(scater)
-library(Matrix)
-library(tidyverse)
 library(dplyr)
 library(tidyr)
 library(reshape2)
-library(pheatmap)
-library(Rtsne)
-library(cowplot)
 library(ggplot2)
-library(ggsci)
-library(scales)
 library(MAST)
-library(DOSE)
-library(patchwork)
-library(plotly)
-library(monocle)
-library(MASS)
-library(loomR)
-library(RColorBrewer)
-library(grDevices)
-library(colorRamps)
-library(data.table)
-library(hexbin)
+library(DoubletFinder)
 
-##############
-# Extraction with Age
-metaage <- data.frame(ident = D@meta.data$orig.ident, Age = D@meta.data$Age)
+
+#### AGED
+# Extraction of agiging data
+# END
+metaage <- data.frame(ident = sDrev@meta.data$orig.ident, Age = sDrev@meta.data$Age)
 metaage <- unique(metaage)
 metaage <- na.omit(metaage)
 rownames(metaage) <- metaage[,1]
 
+
+
 ENDNev <- subset(END, subset = Smoking == "Never")
 ENDSmo <- subset(END, subset = Smoking == "Smoker")
+
 ENDNev <- subset(ENDNev, subset = Age > 0)
 ENDSmo <- subset(ENDSmo, subset = Age > 0)
+
 
 n <- unique(END@meta.data$ENDClass)
 G <- END[rowSums(END) > 0]
 G <- rownames(G)
 ENDNev <- ENDNev[unlist(G),]
 ENDSmo <- ENDSmo[unlist(G),]
+
 ResDF <- list()
 
 for(i in 1:length(n)){
@@ -55,7 +43,7 @@ for(i in 1:length(n)){
 
 	Idents(Nev) <- Nev@meta.data$orig.ident
 	Nevgene <- AverageExpression(Nev)
-	Nevgene <- data.frame(t(Nevgene[["RNA"]]))
+	Nevgene <- data.frame(t(Nevgene[["SCT"]]))
 
 	hoge <- apply(Nevgene, MARGIN = 2, function(y)
 			{
@@ -72,7 +60,7 @@ for(i in 1:length(n)){
 	# Smoker
 	Idents(Smo) <- Smo@meta.data$orig.ident
 	Smogene <- AverageExpression(Smo)
-	Smogene <- data.frame(t(Smogene[["RNA"]]))
+	Smogene <- data.frame(t(Smogene[["SCT"]]))
 
 	hoge <- apply(Smogene, MARGIN = 2, function(y)
 			{
@@ -86,18 +74,18 @@ for(i in 1:length(n)){
 	Smogene <- Smogene[,colnames(Smogene) %in% unlist(hoge)]
 
 
-	# Common genes in Never and Smoker
+	# Commonn genes in Never-smoker and Smoker
 	NGen <- colnames(Nevgene)
 	SGen <- colnames(Smogene)
 	G2 <- intersect(NGen, SGen)
 
 
-	# Merge with Age
+	# Integration with Age
 	Nevgene <- cbind(Nevgene, metaage[rownames(Nevgene),])
 	Smogene <- cbind(Smogene, metaage[rownames(Smogene),])
 
 
-	## Regresstion analysis
+	## Extraction and Cox analysis of common genes which has more 10 specimens
 	for(k in 1:length(G2)){
 		gene <- G2[k]
 	
@@ -124,181 +112,36 @@ for(i in 1:length(n)){
 write.table(ResDF, file = "Age-END-regression.csv", sep = ",")
 
 
+##################################
+##################################
+# STR
+
+STRNev <- subset(STR, subset = Smoking == "Never")
+STRSmo <- subset(STR, subset = Smoking == "Smoker")
+
+STRNev <- subset(STRNev, subset = Age > 0)
+STRSmo <- subset(STRSmo, subset = Age > 0)
 
 
-### Regression analysis with genes
-LM <- data.frame(Exp = Nevgene["MALAT1"], Age = Nevgene$Age)
-m <-lm(LM[,1] ~ LM$Age)
-plot(LM[,1] ~ LM$Age)
+n <- unique(STR@meta.data$STRClass)
+G <- STR[rowSums(STR) > 0]
+G <- rownames(G)
+STRNev <- STRNev[unlist(G),]
+STRSmo <- STRSmo[unlist(G),]
 
-LMs <- data.frame(Exp = Smogene["MALAT1"], Age = Smogene$Age)
-mm <-lm(LMs[,1] ~ LMs$Age)
-plot(LMs[,1] ~ LMs$Age)
-
-
-#### row data extraction
-ENDNev <- subset(END, subset = Smoking == "Never")
-ENDSmo <- subset(END, subset = Smoking == "Smoker")
-ENDNev <- subset(ENDNev, subset = Age > 0)
-ENDSmo <- subset(ENDSmo, subset = Age > 0)
-
-gene = "MALAT1"
-n <- unique(END@meta.data$ENDClass)
-Res <- list()
-for(i in 1:length(n)){
-	Cell <- n[i]
-	Nev <- subset(ENDNev, subset = ENDClass == Cell)
-	Smo <- subset(ENDSmo, subset = ENDClass == Cell)
-
-	Idents(Nev) <- Nev@meta.data$orig.ident
-	Nevgene <- AverageExpression(Nev, features = gene)
-	Idents(Smo) <- Smo@meta.data$orig.ident
-	Smogene <- AverageExpression(Smo, features = gene)
-
-	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
-	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
-
-	Res <- bind_rows(Res, NRes, SRes)
-}
-write.table(Res, file = "Age-END-MALAT1-regression.csv", sep = ",")
-
-
-gene = "FTL"
-n <- unique(END@meta.data$ENDClass)
-Res <- list()
-for(i in 1:length(n)){
-	Cell <- n[i]
-	Nev <- subset(ENDNev, subset = ENDClass == Cell)
-	Smo <- subset(ENDSmo, subset = ENDClass == Cell)
-
-	Idents(Nev) <- Nev@meta.data$orig.ident
-	Nevgene <- AverageExpression(Nev, features = gene)
-	Idents(Smo) <- Smo@meta.data$orig.ident
-	Smogene <- AverageExpression(Smo, features = gene)
-
-	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
-	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
-
-	Res <- bind_rows(Res, NRes, SRes)
-}
-write.table(Res, file = "Age-END-FTL-regression.csv", sep = ",")
-
-
-
-
-##############
-##############
-### Hetamap Visualaiztion
-metaage <- data.frame(ident = D@meta.data$orig.ident, Age = D@meta.data$Age)
-metaage <- unique(metaage)
-metaage <- na.omit(metaage)
-rownames(metaage) <- metaage[,1]
-
-G <- read_csv("genelist2.csv")
-ENDNev <- subset(END, subset = Smoking == "Never")
-ENDSmo <- subset(END, subset = Smoking == "Smoker")
-ENDNev <- subset(ENDNev, subset = Age > 0)
-ENDSmo <- subset(ENDSmo, subset = Age > 0)
-
-n <- unique(END@meta.data$ENDClass)
-ENDNev <- ENDNev[unlist(G),]
-ENDSmo <- ENDSmo[unlist(G),]
 ResDF <- list()
 
 for(i in 1:length(n)){
 
 	Cell <- n[i]
 
-	# Nev
-	Nev <- subset(ENDNev, subset = ENDClass == Cell)
-	Smo <- subset(ENDSmo, subset = ENDClass == Cell)
-
-	Idents(Nev) <- Nev@meta.data$orig.ident
-	Nevgene <- AverageExpression(Nev)
-	Nevgene <- data.frame(t(Nevgene[["RNA"]]))
-
-	hoge <- apply(Nevgene, MARGIN = 2, function(y)
-			{
-			res <- sum(y > 0)
-			return(res)
-			}
-		)
-
-	hoge <- hoge[hoge > 10]
-	hoge <- names(hoge)
-	Nevgene <- Nevgene[,colnames(Nevgene) %in% unlist(hoge)]
-
-
-	# Smo
-	Idents(Smo) <- Smo@meta.data$orig.ident
-	Smogene <- AverageExpression(Smo)
-	Smogene <- data.frame(t(Smogene[["RNA"]]))
-
-	hoge <- apply(Smogene, MARGIN = 2, function(y)
-			{
-			res <- sum(y > 0)
-			return(res)
-			}
-		)
-
-	hoge <- hoge[hoge > 10]
-	hoge <- names(hoge)
-	Smogene <- Smogene[,colnames(Smogene) %in% unlist(hoge)]
-
-	NGen <- colnames(Nevgene)
-	SGen <- colnames(Smogene)
-	G2 <- intersect(NGen, SGen)
-
-	Nevgene <- cbind(Nevgene, metaage[rownames(Nevgene),])
-	Smogene <- cbind(Smogene, metaage[rownames(Smogene),])
-
-
-	if(length(Nevgene$ident) < 10){
-		paste(Cell)
-	}else{
-		if(length(Smogene$ident) < 10){
-			paste(Cell)
-		}else{
-			for(k in 1:length(G2)){
-				gene <- G2[k]
-			
-				LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
-
-				m <-lm(LM[,1] ~ LM$Age)
-				a <- coef(m)[2]
-
-				LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
-
-				mm <-lm(LMs[,1] ~ LMs$Age)
-				b <- coef(mm)[2]
-
-				Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), Smoking = paste(b))
-				ResDF <- rbind(ResDF, Res)
-
-			}
-		}
-
-	}
-
-}
-STRNev <- subset(STR, subset = Smoking == "Never")
-STRSmo <- subset(STR, subset = Smoking == "Smoker")
-STRNev <- subset(STRNev, subset = Age > 0)
-STRSmo <- subset(STRSmo, subset = Age > 0)
-n <- unique(STR@meta.data$STRClass)
-STRNev <- STRNev[unlist(G),]
-STRSmo <- STRSmo[unlist(G),]
-for(i in 1:length(n)){
-
-	Cell <- n[i]
-
-	# Nev
+	# Never
 	Nev <- subset(STRNev, subset = STRClass == Cell)
 	Smo <- subset(STRSmo, subset = STRClass == Cell)
 
 	Idents(Nev) <- Nev@meta.data$orig.ident
 	Nevgene <- AverageExpression(Nev)
-	Nevgene <- data.frame(t(Nevgene[["RNA"]]))
+	Nevgene <- data.frame(t(Nevgene[["SCT"]]))
 
 	hoge <- apply(Nevgene, MARGIN = 2, function(y)
 			{
@@ -312,10 +155,10 @@ for(i in 1:length(n)){
 	Nevgene <- Nevgene[,colnames(Nevgene) %in% unlist(hoge)]
 
 
-	# Smo
+	# Smoker
 	Idents(Smo) <- Smo@meta.data$orig.ident
 	Smogene <- AverageExpression(Smo)
-	Smogene <- data.frame(t(Smogene[["RNA"]]))
+	Smogene <- data.frame(t(Smogene[["SCT"]]))
 
 	hoge <- apply(Smogene, MARGIN = 2, function(y)
 			{
@@ -328,60 +171,76 @@ for(i in 1:length(n)){
 	hoge <- names(hoge)
 	Smogene <- Smogene[,colnames(Smogene) %in% unlist(hoge)]
 
+
+	# Commonn genes in Never-smoker and Smoker
 	NGen <- colnames(Nevgene)
 	SGen <- colnames(Smogene)
 	G2 <- intersect(NGen, SGen)
 
+
+	# Integration with Age
 	Nevgene <- cbind(Nevgene, metaage[rownames(Nevgene),])
 	Smogene <- cbind(Smogene, metaage[rownames(Smogene),])
 
 
-	if(length(Nevgene$ident) < 10){
-		paste(Cell)
-	}else{
-		if(length(Smogene$ident) < 10){
-			paste(Cell)
-		}else{
-			for(k in 1:length(G2)){
-				gene <- G2[k]
-			
-				LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
+	## Extraction and Cox analysis of common genes which has more 10 specimens
+	for(k in 1:length(G2)){
+		gene <- G2[k]
+	
+		LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
 
-				m <-lm(LM[,1] ~ LM$Age)
-				a <- coef(m)[2]
+			m <-lm(LM[,1] ~ LM$Age)
+			a <- coef(m)[2]
+			p <- summary(m)$coefficients[2,4] 
 
-				LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
+		LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
 
-				mm <-lm(LMs[,1] ~ LMs$Age)
-				b <- coef(mm)[2]
+			mm <-lm(LMs[,1] ~ LMs$Age)
+			b <- coef(mm)[2]
+			p2 <- summary(mm)$coefficients[2,4] 
 
-				Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), Smoking = paste(b))
-				ResDF <- rbind(ResDF, Res)
+		Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), NeverP = paste(p), Smoking = paste(b), SmokingP = paste(p2))
+		ResDF <- rbind(ResDF, Res)
 
-			}
-		}
+
 
 	}
 
 }
+
+write.table(ResDF, file = "Age-STR-regression.csv", sep = ",")
+
+
+##################################
+##################################
+# EPI
+
 EPINev <- subset(EPI, subset = Smoking == "Never")
 EPISmo <- subset(EPI, subset = Smoking == "Smoker")
+
 EPINev <- subset(EPINev, subset = Age > 0)
 EPISmo <- subset(EPISmo, subset = Age > 0)
+
+
 n <- unique(EPI@meta.data$EPIClass)
+G <- EPI[rowSums(EPI) > 0]
+G <- rownames(G)
 EPINev <- EPINev[unlist(G),]
 EPISmo <- EPISmo[unlist(G),]
+
+ResDF <- list()
+
 for(i in 1:length(n)){
 
 	Cell <- n[i]
 
-	# Nev
+	# Never
 	Nev <- subset(EPINev, subset = EPIClass == Cell)
 	Smo <- subset(EPISmo, subset = EPIClass == Cell)
 
 	Idents(Nev) <- Nev@meta.data$orig.ident
 	Nevgene <- AverageExpression(Nev)
-	Nevgene <- data.frame(t(Nevgene[["RNA"]]))
+	Nevgene <- data.frame(t(Nevgene[["SCT"]]))
 
 	hoge <- apply(Nevgene, MARGIN = 2, function(y)
 			{
@@ -395,10 +254,10 @@ for(i in 1:length(n)){
 	Nevgene <- Nevgene[,colnames(Nevgene) %in% unlist(hoge)]
 
 
-	# Smo
+	# Smoker
 	Idents(Smo) <- Smo@meta.data$orig.ident
 	Smogene <- AverageExpression(Smo)
-	Smogene <- data.frame(t(Smogene[["RNA"]]))
+	Smogene <- data.frame(t(Smogene[["SCT"]]))
 
 	hoge <- apply(Smogene, MARGIN = 2, function(y)
 			{
@@ -411,60 +270,75 @@ for(i in 1:length(n)){
 	hoge <- names(hoge)
 	Smogene <- Smogene[,colnames(Smogene) %in% unlist(hoge)]
 
+
+	# Commonn genes in Never-smoker and Smoker
 	NGen <- colnames(Nevgene)
 	SGen <- colnames(Smogene)
 	G2 <- intersect(NGen, SGen)
 
+
+	# Integration with Age
 	Nevgene <- cbind(Nevgene, metaage[rownames(Nevgene),])
 	Smogene <- cbind(Smogene, metaage[rownames(Smogene),])
 
 
-	if(length(Nevgene$ident) < 10){
-		paste(Cell)
-	}else{
-		if(length(Smogene$ident) < 10){
-			paste(Cell)
-		}else{
-			for(k in 1:length(G2)){
-				gene <- G2[k]
-			
-				LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
+	## Extraction and Cox analysis of common genes which has more 10 specimens
+	for(k in 1:length(G2)){
+		gene <- G2[k]
 
-				m <-lm(LM[,1] ~ LM$Age)
-				a <- coef(m)[2]
+		LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
 
-				LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
+			m <-lm(LM[,1] ~ LM$Age)
+			a <- coef(m)[2]
+			p <- summary(m)$coefficients[2,4] 
 
-				mm <-lm(LMs[,1] ~ LMs$Age)
-				b <- coef(mm)[2]
+		LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
 
-				Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), Smoking = paste(b))
-				ResDF <- rbind(ResDF, Res)
+			mm <-lm(LMs[,1] ~ LMs$Age)
+			b <- coef(mm)[2]
+			p2 <- summary(mm)$coefficients[2,4] 
 
-			}
-		}
+		Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), NeverP = paste(p), Smoking = paste(b), SmokingP = paste(p2))
+		ResDF <- rbind(ResDF, Res)
 
 	}
 
 }
+
+write.table(ResDF, file = "Age-EPI-regression.csv", sep = ",")
+
+
+
+##################################
+##################################
+# LYM
+
 LYMNev <- subset(LYM, subset = Smoking == "Never")
 LYMSmo <- subset(LYM, subset = Smoking == "Smoker")
+
 LYMNev <- subset(LYMNev, subset = Age > 0)
 LYMSmo <- subset(LYMSmo, subset = Age > 0)
+
+
 n <- unique(LYM@meta.data$LYMClass)
+G <- LYM[rowSums(LYM) > 0]
+G <- rownames(G)
 LYMNev <- LYMNev[unlist(G),]
 LYMSmo <- LYMSmo[unlist(G),]
+
+ResDF <- list()
+
 for(i in 1:length(n)){
 
 	Cell <- n[i]
 
-	# Nev
+	# Never
 	Nev <- subset(LYMNev, subset = LYMClass == Cell)
 	Smo <- subset(LYMSmo, subset = LYMClass == Cell)
 
 	Idents(Nev) <- Nev@meta.data$orig.ident
 	Nevgene <- AverageExpression(Nev)
-	Nevgene <- data.frame(t(Nevgene[["RNA"]]))
+	Nevgene <- data.frame(t(Nevgene[["SCT"]]))
 
 	hoge <- apply(Nevgene, MARGIN = 2, function(y)
 			{
@@ -478,10 +352,10 @@ for(i in 1:length(n)){
 	Nevgene <- Nevgene[,colnames(Nevgene) %in% unlist(hoge)]
 
 
-	# Smo
+	# Smoker
 	Idents(Smo) <- Smo@meta.data$orig.ident
 	Smogene <- AverageExpression(Smo)
-	Smogene <- data.frame(t(Smogene[["RNA"]]))
+	Smogene <- data.frame(t(Smogene[["SCT"]]))
 
 	hoge <- apply(Smogene, MARGIN = 2, function(y)
 			{
@@ -494,60 +368,84 @@ for(i in 1:length(n)){
 	hoge <- names(hoge)
 	Smogene <- Smogene[,colnames(Smogene) %in% unlist(hoge)]
 
+
+	# Commonn genes in Never-smoker and Smoker
 	NGen <- colnames(Nevgene)
 	SGen <- colnames(Smogene)
 	G2 <- intersect(NGen, SGen)
 
+
+	# Integration with Age
 	Nevgene <- cbind(Nevgene, metaage[rownames(Nevgene),])
 	Smogene <- cbind(Smogene, metaage[rownames(Smogene),])
 
 
-	if(length(Nevgene$ident) < 10){
-		paste(Cell)
-	}else{
-		if(length(Smogene$ident) < 10){
-			paste(Cell)
-		}else{
-			for(k in 1:length(G2)){
-				gene <- G2[k]
-			
-				LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
+	## Extraction and Cox analysis of common genes which has more 10 specimens
+	for(k in 1:length(G2)){
+		gene <- G2[k]
+	
+		LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
 
-				m <-lm(LM[,1] ~ LM$Age)
-				a <- coef(m)[2]
+			m <-lm(LM[,1] ~ LM$Age)
+			a <- coef(m)[2]
+			p <- summary(m)$coefficients[2,4] 
 
-				LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
+		LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
 
-				mm <-lm(LMs[,1] ~ LMs$Age)
-				b <- coef(mm)[2]
+			mm <-lm(LMs[,1] ~ LMs$Age)
+			b <- coef(mm)[2]
+			p2 <- summary(mm)$coefficients[2,4] 
 
-				Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), Smoking = paste(b))
-				ResDF <- rbind(ResDF, Res)
-
-			}
-		}
+		Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), NeverP = paste(p), Smoking = paste(b), SmokingP = paste(p2))
+		ResDF <- rbind(ResDF, Res)
 
 	}
 
 }
+
+write.table(ResDF, file = "Age-LYM-regression.csv", sep = ",")
+
+
+
+
+
+##################################
+##################################
+# MYE
+
+metaage <- data.frame(ident = D@meta.data$orig.ident, Age = D@meta.data$Age)
+metaage <- unique(metaage)
+metaage <- na.omit(metaage)
+rownames(metaage) <- metaage[,1]
+
+
+
 MYENev <- subset(MYE, subset = Smoking == "Never")
 MYESmo <- subset(MYE, subset = Smoking == "Smoker")
+
 MYENev <- subset(MYENev, subset = Age > 0)
 MYESmo <- subset(MYESmo, subset = Age > 0)
+
+
 n <- unique(MYE@meta.data$MYEClass)
+G <- MYE[rowSums(MYE) > 0]
+G <- rownames(G)
 MYENev <- MYENev[unlist(G),]
 MYESmo <- MYESmo[unlist(G),]
+
+ResDF <- list()
+
 for(i in 1:length(n)){
 
 	Cell <- n[i]
 
-	# Nev
+	# Never
 	Nev <- subset(MYENev, subset = MYEClass == Cell)
 	Smo <- subset(MYESmo, subset = MYEClass == Cell)
 
 	Idents(Nev) <- Nev@meta.data$orig.ident
 	Nevgene <- AverageExpression(Nev)
-	Nevgene <- data.frame(t(Nevgene[["RNA"]]))
+	Nevgene <- data.frame(t(Nevgene[["SCT"]]))
 
 	hoge <- apply(Nevgene, MARGIN = 2, function(y)
 			{
@@ -561,10 +459,10 @@ for(i in 1:length(n)){
 	Nevgene <- Nevgene[,colnames(Nevgene) %in% unlist(hoge)]
 
 
-	# Smo
+	# Smoker
 	Idents(Smo) <- Smo@meta.data$orig.ident
 	Smogene <- AverageExpression(Smo)
-	Smogene <- data.frame(t(Smogene[["RNA"]]))
+	Smogene <- data.frame(t(Smogene[["SCT"]]))
 
 	hoge <- apply(Smogene, MARGIN = 2, function(y)
 			{
@@ -577,45 +475,230 @@ for(i in 1:length(n)){
 	hoge <- names(hoge)
 	Smogene <- Smogene[,colnames(Smogene) %in% unlist(hoge)]
 
+
+	# Commonn genes in Never-smoker and Smoker
 	NGen <- colnames(Nevgene)
 	SGen <- colnames(Smogene)
 	G2 <- intersect(NGen, SGen)
 
+
+	# Integration with Age
 	Nevgene <- cbind(Nevgene, metaage[rownames(Nevgene),])
 	Smogene <- cbind(Smogene, metaage[rownames(Smogene),])
 
 
+	## Extraction and Cox analysis of common genes which has more 10 specimens
+	for(k in 1:length(G2)){
+		gene <- G2[k]
 
-	if(length(Nevgene$ident) < 10){
-		paste(Cell)
-	}else{
-		if(length(Smogene$ident) < 10){
-			paste(Cell)
-		}else{
-			for(k in 1:length(G2)){
-				gene <- G2[k]
-			
-				LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
+		LM <- data.frame(Exp = Nevgene[gene], Age = Nevgene$Age)
 
-				m <-lm(LM[,1] ~ LM$Age)
-				a <- coef(m)[2]
+			m <-lm(LM[,1] ~ LM$Age)
+			a <- coef(m)[2]
+			p <- summary(m)$coefficients[2,4] 
 
-				LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
+		LMs <- data.frame(Exp = Smogene[gene], Age = Smogene$Age)
 
-				mm <-lm(LMs[,1] ~ LMs$Age)
-				b <- coef(mm)[2]
+			mm <-lm(LMs[,1] ~ LMs$Age)
+			b <- coef(mm)[2]
+			p2 <- summary(mm)$coefficients[2,4] 
 
-				Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), Smoking = paste(b))
-				ResDF <- rbind(ResDF, Res)
-
-			}
-		}
+		Res <- data.frame(gene = gene, Cell = Cell, Never = paste(a), NeverP = paste(p), Smoking = paste(b), SmokingP = paste(p2))
+		ResDF <- rbind(ResDF, Res)
 
 	}
 
 }
 
-write.table(ResDF, file = "Age-AllCell-genelist-regression.csv", sep = ",")
+write.table(ResDF, file = "Age-MYE-regression.csv", sep = ",")
+
+
+
+
+
+
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+
+
+
+EPINev <- subset(EPI, subset = Smoking == "Never")
+EPISmo <- subset(EPI, subset = Smoking == "Smoker")
+
+gene = "MALAT1"
+n <- unique(EPI@meta.data$EPIClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(EPINev, subset = EPIClass == Cell)
+	Smo <- subset(EPISmo, subset = EPIClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-EPI-MALAT1-regression.csv", sep = ",")
+
+
+gene = "SCGB3A1"
+n <- unique(EPI@meta.data$EPIClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(EPINev, subset = EPIClass == Cell)
+	Smo <- subset(EPISmo, subset = EPIClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-EPI-SCGB3A1-regression.csv", sep = ",")
+
+
+gene = "SFTPB"
+n <- unique(EPI@meta.data$EPIClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(EPINev, subset = EPIClass == Cell)
+	Smo <- subset(EPISmo, subset = EPIClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-EPI-SFTPB-regression.csv", sep = ",")
+
+
+gene = "SFTPC"
+n <- unique(EPI@meta.data$EPIClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(EPINev, subset = EPIClass == Cell)
+	Smo <- subset(EPISmo, subset = EPIClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-EPI-SFTPC-regression.csv", sep = ",")
+
+
+
+
+
+LYMNev <- subset(LYM, subset = Smoking == "Never")
+LYMSmo <- subset(LYM, subset = Smoking == "Smoker")
+
+gene = "MALAT1"
+n <- unique(LYM@meta.data$LYMClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(LYMNev, subset = LYMClass == Cell)
+	Smo <- subset(LYMSmo, subset = LYMClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-LYM-MALAT1-regression.csv", sep = ",")
+
+
+
+
+
+
+
+MYENev <- subset(MYE, subset = Smoking == "Never")
+MYESmo <- subset(MYE, subset = Smoking == "Smoker")
+
+gene = "FTL"
+n <- unique(MYE@meta.data$MYEClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(MYENev, subset = MYEClass == Cell)
+	Smo <- subset(MYESmo, subset = MYEClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-MYE-FTL-regression.csv", sep = ",")
+
+
+gene = "TMSB4X"
+n <- unique(MYE@meta.data$MYEClass)
+Res <- list()
+for(i in 1:length(n)){
+	Cell <- n[i]
+	Nev <- subset(MYENev, subset = MYEClass == Cell)
+	Smo <- subset(MYESmo, subset = MYEClass == Cell)
+
+	Idents(Nev) <- Nev@meta.data$orig.ident
+	Nevgene <- AverageExpression(Nev, features = gene)
+	Idents(Smo) <- Smo@meta.data$orig.ident
+	Smogene <- AverageExpression(Smo, features = gene)
+
+	NRes <- data.frame(Smoking = "Never", Cell = Cell, Nevgene)
+	SRes <- data.frame(Smoking = "Smoker", Cell = Cell, Smogene)
+
+	Res <- bind_rows(Res, NRes, SRes)
+}
+
+write.table(Res, file = "Age-MYE-TMSB4X-regression.csv", sep = ",")
+
+
+
 
 
 
