@@ -15,85 +15,65 @@ gene = c("AJAP1", "NPHP4", "FUBP", "DNAJB4", "MUC1", "ADAM15", "THBS3", "NRXN1",
 		"MIPEP", "TNFRSF19", "BRCA2", "GPC5", "SEMA6D", "SECISBP2L", "CHRNA5", "CHRNA3", "CHRNB4", "IREB2", "PSMA4", "HYKK", "BPTF", "FAM38B", "APCDD1", "NAPG",
 		"GAREM", "TGFB1", "CYP2A6", "BPIFB1", "CYP24A1", "RTEL1", "CHEK2", "LIF", "HORMAD2", "MTMR3")
 
-GWAS = EPI[gene,]
-Gender <- unique(GWAS@meta.data$Gender)
-matlist = list()
-
-for(i in 1:length(Gender)){
-	GEN <- Gender[i]
-	cl <- subset(GWAS, subset = Gender == GEN)
-	Idents(object = cl) <- cl@meta.data$EPIClass
-	avelist = AverageExpression(cl, add.ident = "Smoking")
-	avelist = data.frame(avelist$RNA)
-	matlist = bind_cols(matlist, avelist, Gender = GEN)
-
-}
-
-write.table(matlist, "GWAS-EPI.csv", sep = ",")
-
-
 
 GWAS = EPI[gene,]
-Gender <- unique(GWAS@meta.data$Gender)
 Res = list()
-for(i in 1:length(Gender)){
-	GEN <- Gender[i]
-	cl <- subset(GWAS, subset = Gender == GEN)
-	Idents(object = cl) <- cl@meta.data$EPIClass
-	avelist = AverageExpression(cl, add.ident = "Smoking")
-	avelist = data.frame(avelist$RNA, Genes = rownames(avelist$RNA))
+	Idents(object = GWAS) <- GWAS@meta.data$EPIClass
+	avelist = AverageExpression(GWAS, add.ident = "Smoking")
+	avelist = data.frame(avelist$SCT, Genes = rownames(avelist$SCT))
 	matlist <- reshape2::melt(avelist)
-	matlist <- data.frame(matlist, Gender = GEN)
+	matlist <- data.frame(matlist)
 	Res <- bind_rows(Res, matlist)
-}
 GWAS = STR[gene,]
-Gender <- unique(GWAS@meta.data$Gender)
-for(i in 1:length(Gender)){
-	GEN <- Gender[i]
-	cl <- subset(GWAS, subset = Gender == GEN)
-	Idents(object = cl) <- cl@meta.data$STRClass
-	avelist = AverageExpression(cl, add.ident = "Smoking")
-	avelist = data.frame(avelist$RNA, Genes = rownames(avelist$RNA))
+	Idents(object = GWAS) <- GWAS@meta.data$STRClass
+	avelist = AverageExpression(GWAS, add.ident = "Smoking")
+	avelist = data.frame(avelist$SCT, Genes = rownames(avelist$SCT))
 	matlist <- reshape2::melt(avelist)
-	matlist <- data.frame(matlist, Gender = GEN)
+	matlist <- data.frame(matlist)
 	Res <- bind_rows(Res, matlist)
-}
 GWAS = END[gene,]
-Gender <- unique(GWAS@meta.data$Gender)
-for(i in 1:length(Gender)){
-	GEN <- Gender[i]
-	cl <- subset(GWAS, subset = Gender == GEN)
-	Idents(object = cl) <- cl@meta.data$ENDClass
-	avelist = AverageExpression(cl, add.ident = "Smoking")
-	avelist = data.frame(avelist$RNA, Genes = rownames(avelist$RNA))
+	Idents(object = GWAS) <- GWAS@meta.data$ENDClass
+	avelist = AverageExpression(GWAS, add.ident = "Smoking")
+	avelist = data.frame(avelist$SCT, Genes = rownames(avelist$SCT))
 	matlist <- reshape2::melt(avelist)
-	matlist <- data.frame(matlist, Gender = GEN)
+	matlist <- data.frame(matlist)
 	Res <- bind_rows(Res, matlist)
-}
 GWAS = LYM[gene,]
-Gender <- unique(GWAS@meta.data$Gender)
-for(i in 1:length(Gender)){
-	GEN <- Gender[i]
-	cl <- subset(GWAS, subset = Gender == GEN)
-	Idents(object = cl) <- cl@meta.data$LYMClass
-	avelist = AverageExpression(cl, add.ident = "Smoking")
-	avelist = data.frame(avelist$RNA, Genes = rownames(avelist$RNA))
+	Idents(object = GWAS) <- GWAS@meta.data$LYMClass
+	avelist = AverageExpression(GWAS, add.ident = "Smoking")
+	avelist = data.frame(avelist$SCT, Genes = rownames(avelist$SCT))
 	matlist <- reshape2::melt(avelist)
-	matlist <- data.frame(matlist, Gender = GEN)
+	matlist <- data.frame(matlist)
 	Res <- bind_rows(Res, matlist)
-}
 GWAS = MYE[gene,]
-Gender <- unique(GWAS@meta.data$Gender)
-for(i in 1:length(Gender)){
-	GEN <- Gender[i]
-	cl <- subset(GWAS, subset = Gender == GEN)
-	Idents(object = cl) <- cl@meta.data$MYEClass
-	avelist = AverageExpression(cl, add.ident = "Smoking")
-	avelist = data.frame(avelist$RNA, Genes = rownames(avelist$RNA))
+	Idents(object = GWAS) <- GWAS@meta.data$MYEClass
+	avelist = AverageExpression(GWAS, add.ident = "Smoking")
+	avelist = data.frame(avelist$SCT, Genes = rownames(avelist$SCT))
 	matlist <- reshape2::melt(avelist)
-	matlist <- data.frame(matlist, Gender = GEN)
+	matlist <- data.frame(matlist)
 	Res <- bind_rows(Res, matlist)
-}
 
 
-write.table(Res, "GWAS-all.csv", sep = ",")
+write.table(Res, "GWAS-all-withoutGender.csv", sep = ",")
+
+
+mat = reshape2::dcast(Res, variable ~ Genes, value.var = "value")
+
+write.table(mat, "GWAS-all-withoutGenderMatrix.csv", sep = ",")
+
+
+
+## Boxplot
+hoge <- VlnPlot(EPI, "MUC1", group.by = "EPIClass", split.by = "Smoking") + NoLegend()
+data <- data.frame(Gene = hoge$data$MUC1,ident = hoge$data$ident, Smoking = hoge$data$split)
+data <- data[order(data$ident, decreasing = FALSE),]
+
+write.table(data, "GWAS-EPI-MUC1.csv", sep = ",")
+
+
+## Boxplot
+hoge <- VlnPlot(MYE, "HLA-A", group.by = "MYEClass", split.by = "Smoking") + NoLegend()
+data <- data.frame(Gene = hoge$data$`HLA-A`,ident = hoge$data$ident, Smoking = hoge$data$split)
+data <- data[order(data$ident, decreasing = FALSE),]
+
+write.table(data, "GWAS-MYE-HLA-A.csv", sep = ",")
