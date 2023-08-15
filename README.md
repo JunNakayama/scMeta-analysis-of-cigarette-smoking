@@ -8,7 +8,7 @@ Single-cell RNA-seq (scRNA-seq) technologies have been broadly utilized to revea
 
 
 ## Outline of the atlas
-1. [Integration of publicly datasets and expressional analysis of the integrated atlas](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/Integration.R)
+1. [Integration of publicly datasets and expressional analysis of the integrated atla(Integration, Visualization, and Cell type reannotation))](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/Integration.R)
 2. [VARIED analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/VARIED.R)
 3. [Moddule analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/Module%20analysis.R)
 4. [GWAS single-cell expression analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/GWAS.R)
