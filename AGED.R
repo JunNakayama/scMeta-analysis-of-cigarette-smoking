@@ -1,11 +1,9 @@
 library(Seurat)
-library(harmony)
 library(dplyr)
 library(tidyr)
 library(reshape2)
 library(ggplot2)
-library(MAST)
-library(DoubletFinder)
+
 
 
 #### AGED
