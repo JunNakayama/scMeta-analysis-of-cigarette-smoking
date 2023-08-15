@@ -7,7 +7,14 @@ Single-cell RNA-seq (scRNA-seq) technologies have been broadly utilized to revea
 
 bioRxiv https://www.biorxiv.org/content/10.1101/2021.12.09.472029v1
 
+FigShare https://figshare.com/projects/Single-cell_meta-analysis_of_cigarette_smoking_lung_atlas/175497
 
 Jun Nakayama, Ph.D.
 jnakayama.re@gmail.com
+
+
+
+[Integration of publicly datasets](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/Integration.R)
+
+
 
