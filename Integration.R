@@ -348,110 +348,21 @@ sDrev <- PrepSCTFindMarkers(sDrev, assay = "SCT", verbose = TRUE)
 sDrev.markers <- FindAllMarkers(sDrev, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.5, test.use = "MAST", assay = "SCT")
 write.table(sDrev.markers, file = 'sDrevMarker-genes.tsv', sep='	')
 
-
-
 ######################
 ######################
 ######################
 ######################
+######################
 
-### Analysis of cigarette smoking lung atlas
+library(lisi)
 
-DimPlot(sDrev, cells.highlight =  WhichCells(sDrev, ident = c(37)), cols.highlight = c("green3"), reduction = "umap") + NoLegend()
+hoge <- DimPlot(sDrev, reduction = "umap", raster = FALSE) + NoLegend()
+x <- matrix(UMAP1 = hoge$data$UMAP_1, UMAP2 = hoge$data$UMAP_2)
+meta_data <- data.frame(sDrev@meta.data$Class6, sDrev@meta.data$Dataset)
 
-
-## Changing the cluster name 
-
-modmeta <- sDrev@meta.data
-IDENT <- as.character(sDrev@active.ident)
-
-clus = c(0,3,11,12,22,26,28,30,31)
-IDENT[IDENT %in% clus] <- "Macrophage"
-clus = c(6,14)
-IDENT[IDENT %in% clus] <- "Monocyte"
-clus = c(24)
-IDENT[IDENT %in% clus] <- "ProliferatingImmunecell"
-clus = c(32)
-IDENT[IDENT %in% clus] <- "ProliferatingEpithelia"
-clus = c(17)
-IDENT[IDENT %in% clus] <- "DC"
-clus = c(1)
-IDENT[IDENT %in% clus] <- "Tcell"
-clus = c(4,41)
-IDENT[IDENT %in% clus] <- "NK/NKT"
-clus = c(23,40)
-IDENT[IDENT %in% clus] <- "Bcell/Plasma"
-clus = c(8)
-IDENT[IDENT %in% clus] <- "Neutrophil"
-clus = c(21)
-IDENT[IDENT %in% clus] <- "Mast/Basophil"
-clus = c(9,29)
-IDENT[IDENT %in% clus] <- "Endothelium"
-clus = c(18,25,35)
-IDENT[IDENT %in% clus] <- "Fibroblastic"
-clus = c(7)
-IDENT[IDENT %in% clus] <- "Cilia"
-clus = c(19)
-IDENT[IDENT %in% clus] <- "AT1"
-clus = c(20)
-IDENT[IDENT %in% clus] <- "Club"
-clus = c(5,10,27,33,36,38,39)
-IDENT[IDENT %in% clus] <- "AT2"
-clus = c(2)
-IDENT[IDENT %in% clus] <- "Basal"
-clus = c(13)
-IDENT[IDENT %in% clus] <- "Basal-px"
-clus = c(15)
-IDENT[IDENT %in% clus] <- "Goblet"
-clus = c(16)
-IDENT[IDENT %in% clus] <- "Mucous"
-clus = c(34)
-IDENT[IDENT %in% clus] <- "Serous"
-clus = c(37)
-IDENT[IDENT %in% clus] <- "Ionocyte"
-
-modmeta <- cbind(modmeta, Class48 = IDENT)
-sDrev@meta.data <- modmeta
+res <- compute_lisi(x, meta_data, c("sDrev.meta.data.Class6", "sDrev.meta.data.Dataset"))
 
 
-
-modmeta <- sDrev@meta.data
-IDENT <- as.character(sDrev@active.ident)
-
-clus = c(0,3,11,12,22,26,28,30,31,6,14,17,1,4,41,23,40,8,21)
-IDENT[IDENT %in% clus] <- "Immune"
-clus = c(7,19,20,5,10,27,33,36,38,39,2,13,15,16,34,37)
-IDENT[IDENT %in% clus] <- "Epithilia"
-clus = c(24)
-IDENT[IDENT %in% clus] <- "ProliferatingImmunecell"
-clus = c(32)
-IDENT[IDENT %in% clus] <- "ProliferatingEpithelia"
-clus = c(9,29)
-IDENT[IDENT %in% clus] <- "Endotheila"
-clus = c(18,25,35)
-IDENT[IDENT %in% clus] <- "Fibroblastic"
-
-
-modmeta <- cbind(modmeta, Class6 = IDENT)
-sDrev@meta.data <- modmeta
-
-
-
-DimPlot(sDrev, reduction = "umap", group.by = "Class48", label = TRUE) + NoLegend()
-DimPlot(sDrev, reduction = "umap", group.by = "Class48") + NoLegend()
-DimPlot(sDrev, reduction = "umap", group.by = "Class48")
-
-
-DimPlot(sDrev, reduction = "umap", group.by = "Class6", label = TRUE) + NoLegend()
-DimPlot(sDrev, reduction = "umap", group.by = "Class6") + NoLegend()
-DimPlot(sDrev, reduction = "umap", group.by = "Class6")
-
-
-write.table(table(sDrev@meta.data$orig.ident, sDrev@meta.data$Class6), file = "Table-origident-Class6.csv", sep = ",")
-write.table(table(sDrev@meta.data$Smoking, sDrev@meta.data$Class6), file = "Table-Smo-Class6.csv", sep = ",")
-
-hoge <- data.frame(table(D@meta.data$orig.ident, D@meta.data$Class38, D@meta.data$Smoking, D@meta.data$Phase))
-write.table(hoge, file = "Table-origident-Smo-Class38-Phase.csv", sep = ",")
 
 
 ######################
@@ -460,7 +371,16 @@ write.table(hoge, file = "Table-origident-Smo-Class38-Phase.csv", sep = ",")
 ######################
 ######################
 ######################
-
+######################
+######################
+# Visiualization of the integrated atlas
+######################
+######################
+######################
+######################
+######################
+######################
+######################
 hoge <- DimPlot(sDrev, reduction = "umap", raster = FALSE) + NoLegend()
 data <- data.frame(UMAP1 = hoge$data$UMAP_1, UMAP2 = hoge$data$UMAP_2, ident = hoge$data$ident)
 data <- data[order(data$ident, decreasing = FALSE),]
