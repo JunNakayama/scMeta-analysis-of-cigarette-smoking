@@ -12,9 +12,10 @@ Single-cell RNA-seq (scRNA-seq) technologies have been broadly utilized to revea
 2. [VARIED analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/VARIED.R)
 3. [Moddule analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/Module%20analysis.R)
 4. [GWAS single-cell expression analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/GWAS.R)
-5. [Differences in gender](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/GENDER.R)
-6. [AGED analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/GENDER.R)
-7. [Cell-Cell interaction analysis, bioRxiv](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/CCI.R)
+5. [AGED analysis](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/GENDER.R)
+
+6. [Cell-Cell interaction analysis, bioRxiv](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/CCI.R)
+7. [Differences in gender, bioRxiv](https://github.com/JunNakayama/scMeta-analysis-of-cigarette-smoking/blob/main/GENDER.R)
 
 
 
